@@ -1,19 +1,22 @@
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+let maintenanceMode = false; // ⛔️ also resets per invocation
+
+const ADMIN_SECRET = "block"; // 🔐 hardcoded admin key
+
+export default function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "Method not allowed" });
   }
 
   const { secret, active } = req.body;
 
-  if (secret !== process.env.ADMIN_SECRET) {
-    return res.status(401).json({ message: 'Unauthorized' });
+  if (secret !== ADMIN_SECRET) {
+    return res.status(401).json({ message: "Unauthorized" });
   }
 
-  const newMode = !!active;
-  process.env.MAINTENANCE_MODE = newMode.toString(); // not persisted between invocations!
+  maintenanceMode = !!active; // this will reset on next request
 
   res.status(200).json({
-    message: `Maintenance mode ${newMode ? 'ON' : 'OFF'}`,
-    maintenance: newMode,
+    message: `Maintenance mode ${maintenanceMode ? "ON" : "OFF"}`,
+    maintenance: maintenanceMode,
   });
 }
