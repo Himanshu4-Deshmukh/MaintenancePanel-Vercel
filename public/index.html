@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Maintenance Control</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: sans-serif;
+        background: #f9fafb;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+      }
+      .box {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        width: 100%;
+        max-width: 400px;
+      }
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+      }
+      .status {
+        margin: 1rem 0;
+        font-weight: bold;
+      }
+      input {
+        padding: 0.5rem;
+        width: 100%;
+        margin-bottom: 1rem;
+      }
+      button {
+        padding: 0.5rem 1rem;
+        margin: 0.25rem;
+        cursor: pointer;
+      }
+      .success {
+        color: green;
+      }
+      .error {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h1>Maintenance Control</h1>
+      <div class="status" id="statusText">Checking status...</div>
+      <input type="password" id="secretKey" placeholder="Admin Secret" />
+      <div>
+        <button onclick="toggle(true)">Turn ON</button>
+        <button onclick="toggle(false)">Turn OFF</button>
+      </div>
+      <div>
+        <button onclick="getStatus()">Refresh</button>
+      </div>
+      <div id="message"></div>
+    </div>
+
+    <script>
+      async function getStatus() {
+        try {
+          const res = await fetch("/status");
+          const data = await res.json();
+          const el = document.getElementById("statusText");
+          el.textContent = data.maintenance
+            ? "Maintenance Mode: ON"
+            : "Maintenance Mode: OFF";
+          el.className = data.maintenance ? "status error" : "status success";
+        } catch {
+          showMessage("Failed to fetch status", "error");
+        }
+      }
+
+      async function toggle(active) {
+        const secret = document.getElementById("secretKey").value.trim();
+        if (!secret) return showMessage("Secret key required", "error");
+
+        try {
+          const res = await fetch("/toggle", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ secret, active }),
+          });
+          const data = await res.json();
+          if (res.ok) {
+            showMessage(data.message, "success");
+            getStatus();
+          } else {
+            showMessage(data.message || "Unauthorized", "error");
+          }
+        } catch {
+          showMessage("Failed to toggle maintenance", "error");
+        }
+      }
+
+      function showMessage(msg, type) {
+        const el = document.getElementById("message");
+        el.textContent = msg;
+        el.className = type;
+        setTimeout(() => (el.textContent = ""), 4000);
+      }
+
+      getStatus();
+    </script>
+  </body>
+</html>
